@@ -33,7 +33,7 @@ if 'agotados' not in st.session_state:
     st.session_state.agotados = []
 
 # URL del CSV de Reseñas (pestaña "Reseñas" publicada en tu Google Sheets)
-URL_CSV_RESENAS = "https://script.google.com/macros/s/AKfycbxCGiDEUAAvVXv4cfm05ajiVKotnCYgeQv8wmePsQoM_GgkCp8poM7iSCGGj5TEbIm4/exec"
+URL_CSV_RESENAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTIoRwg327pe_n_h-paHJ2OMmufADQgIfeiTvXBWTzfnDyJn21dDhhSYq97WZIVb8ZzQfwaHlGGmvd/pubhtml?gid=764839671&single=true"
 
 # Memoria de reseñas de clientes (se recarga desde Sheets)
 if 'resenas' not in st.session_state:
@@ -795,6 +795,7 @@ with st.expander("⚙️"):
         if st.button("Cerrar Sesión", type="secondary", use_container_width=True):
             st.session_state.admin_logged_in = False
             st.rerun()   
+
 
 
 
