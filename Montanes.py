@@ -4,6 +4,8 @@ import pandas as pd
 import base64 
 import requests 
 import threading 
+import re
+import altair as alt
 
 # ==========================================
 # 1. CONFIGURACIÓN INICIAL DE LA PÁGINA
@@ -18,6 +20,27 @@ if 'carrito' not in st.session_state:
 
 if 'fase_pedido' not in st.session_state:
     st.session_state.fase_pedido = 1
+
+# Variables del Perfil Administrador
+if 'admin_logged_in' not in st.session_state:
+    st.session_state.admin_logged_in = False
+
+if 'tienda_abierta' not in st.session_state:
+    st.session_state.tienda_abierta = True
+
+# Memoria de inventario (Guarda los nombres de los platillos agotados)
+if 'agotados' not in st.session_state:
+    st.session_state.agotados = []
+
+# URL del CSV de Reseñas (pestaña "Reseñas" publicada en tu Google Sheets)
+URL_CSV_RESENAS = "https://script.google.com/macros/s/AKfycbxCGiDEUAAvVXv4cfm05ajiVKotnCYgeQv8wmePsQoM_GgkCp8poM7iSCGGj5TEbIm4/exec"
+
+# Memoria de reseñas de clientes (se recarga desde Sheets)
+if 'resenas' not in st.session_state:
+    st.session_state.resenas = []
+# URL del Apps Script para guardar reseñas
+URL_APPS_SCRIPT_RESENAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTIoRwg327pe_n_h-paHJ2OMmufADQgIfeiTvXBWTzfnDyJn21dDhhSYq97WZIVb8ZzQfwaHlGGmvd/pub?gid=764839671&single=true&output=csv"
+
 
 # ==========================================
 # 3. FUNCIONES PRINCIPALES DEL SISTEMA
@@ -47,6 +70,31 @@ def enviar_datos_excel(url, datos):
     except:
         pass
 
+def enviar_resena_sheets(url, datos):
+    """Envía la reseña al Apps Script (con imagen en base64 si hay)."""
+    try:
+        requests.post(url, json=datos, timeout=10)
+    except:
+        pass
+
+@st.cache_data(ttl=30)
+def cargar_resenas_sheets(url_csv):
+    """Carga reseñas desde Google Sheets publicado como CSV."""
+    try:
+        df = pd.read_csv(url_csv)
+        resenas = []
+        for _, row in df.iterrows():
+            resenas.append({
+                "fecha":       str(row.get("Fecha", "")).strip(),
+                "nombre":      str(row.get("Nombre", "")).strip(),
+                "estrellas":   int(float(str(row.get("Estrellas", 5)))),
+                "comentario":  str(row.get("Comentario", "")).strip(),
+                "imagen_url":  str(row.get("ImagenURL", "")).strip(),
+            })
+        return list(reversed(resenas))   # las más nuevas primero
+    except Exception:
+        return []
+
 # Cargamos imágenes a la memoria RAM
 @st.cache_data
 def get_img_as_base64(file):
@@ -72,43 +120,33 @@ carr_1_src = f"data:image/jpeg;base64,{carrusel_1_base64}" if carrusel_1_base64 
 carr_2_src = f"data:image/jpeg;base64,{carrusel_2_base64}" if carrusel_2_base64 else logo_src
 carr_3_src = f"data:image/jpeg;base64,{carrusel_3_base64}" if carrusel_3_base64 else logo_src
 
-
 # ==========================================
 # 4. MOTOR VISUAL Y ESTILOS CSS BASE
 # ==========================================
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
 <style>
-:root {
---color-naranja: #FF6B00;
---color-rojo: #D32F2F;
---color-crema: #F4F6F8; 
---color-texto: #1D1D1F; 
-}
-header, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], 
-[data-testid="stStatusWidget"], #MainMenu { display: none !important; visibility: hidden !important; }
-div[class*="viewerBadge"], div[class*="stDeployButton"], a[href*="streamlit"], button[kind="header"] { 
-display: none !important; opacity: 0 !important; pointer-events: none !important; z-index: -9999 !important; 
-}
+:root { --color-naranja: #FF6B00; --color-rojo: #D32F2F; --color-crema: #F4F6F8; --color-texto: #1D1D1F; }
+header, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], #MainMenu { display: none !important; visibility: hidden !important; }
+div[class*="viewerBadge"], div[class*="stDeployButton"], a[href*="streamlit"], button[kind="header"] { display: none !important; opacity: 0 !important; pointer-events: none !important; z-index: -9999 !important; }
 [data-testid="stAppViewBlockContainer"], [data-testid="stVerticalBlock"] { opacity: 1 !important; }
-[data-testid="stAppViewContainer"], .stApp { 
-background-color: var(--color-crema) !important; 
-background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 200 200'%3E%3Cg stroke='%231D1D1F' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.06'%3E%3Cpath d='M20,80 C20,50 70,50 70,80 C70,85 20,85 20,80 Z'/%3E%3Cpath d='M25,75 Q45,60 65,75'/%3E%3Cpath d='M30,70 L35,60 M45,72 L47,58 M60,68 L58,58'/%3E%3Cpath d='M150,30 C170,30 180,60 160,80 C140,100 120,70 150,30 Z'/%3E%3Cpath d='M150,30 Q145,20 135,15'/%3E%3Ccircle cx='50' cy='150' r='20'/%3E%3Ccircle cx='50' cy='150' r='15'/%3E%3Cline x1='50' y1='135' x2='50' y2='165'/%3E%3Cline x1='35' y1='150' x2='65' y2='150'/%3E%3Cline x1='39' y1='139' x2='61' y2='161'/%3E%3Cline x1='39' y1='161' x2='61' y2='139'/%3E%3Cpath d='M140,150 C120,150 120,180 140,180 C160,180 160,150 140,150 Z'/%3E%3Ccircle cx='140' cy='168' r='8'/%3E%3Cpolygon points='90,100 110,60 130,100'/%3E%3Cpath d='M100,75 L102,77 M115,90 L117,92'/%3E%3Cpath d='M90,20 L95,25 M95,20 L90,25'/%3E%3Cpath d='M20,120 L25,125 M25,120 L20,125'/%3E%3Cpath d='M180,130 A5,5 0 0,1 190,130 A5,5 0 0,1 180,130'/%3E%3C/g%3E%3C/svg%3E") !important;
-background-size: 400px 400px;
-font-family: 'Inter', sans-serif !important;
-}
+[data-testid="stAppViewContainer"], .stApp { background-color: var(--color-crema) !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 200 200'%3E%3Cg stroke='%231D1D1F' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.06'%3E%3Cpath d='M20,80 C20,50 70,50 70,80 C70,85 20,85 20,80 Z'/%3E%3Cpath d='M25,75 Q45,60 65,75'/%3E%3Cpath d='M30,70 L35,60 M45,72 L47,58 M60,68 L58,58'/%3E%3Cpath d='M150,30 C170,30 180,60 160,80 C140,100 120,70 150,30 Z'/%3E%3Cpath d='M150,30 Q145,20 135,15'/%3E%3Ccircle cx='50' cy='150' r='20'/%3E%3Ccircle cx='50' cy='150' r='15'/%3E%3Cline x1='50' y1='135' x2='50' y2='165'/%3E%3Cline x1='35' y1='150' x2='65' y2='150'/%3E%3Cline x1='39' y1='139' x2='61' y2='161'/%3E%3Cline x1='39' y1='161' x2='61' y2='139'/%3E%3Cpath d='M140,150 C120,150 120,180 140,180 C160,180 160,150 140,150 Z'/%3E%3Ccircle cx='140' cy='168' r='8'/%3E%3Cpolygon points='90,100 110,60 130,100'/%3E%3Cpath d='M100,75 L102,77 M115,90 L117,92'/%3E%3Cpath d='M90,20 L95,25 M95,20 L90,25'/%3E%3Cpath d='M20,120 L25,125 M25,120 L20,125'/%3E%3Cpath d='M180,130 A5,5 0 0,1 190,130 A5,5 0 0,1 180,130'/%3E%3C/g%3E%3C/svg%3E") !important; background-size: 400px 400px; font-family: 'Inter', sans-serif !important; }
 .stApp { margin-top: -50px; }
 h1, h2, h3, h4, p, div, span, label, li { color: var(--color-texto) !important; font-family: 'Inter', sans-serif; }
+div[data-baseweb="input"] input, div[data-baseweb="textarea"] textarea { background-color: white !important; color: #1D1D1F !important; border: 2px solid #E0E0E0 !important; border-radius: 12px; padding: 12px; font-weight: 500; }
+div[data-baseweb="input"] input:focus, div[data-baseweb="textarea"] textarea:focus { border: 2px solid var(--color-naranja) !important; }
+div[data-baseweb="input"] input::placeholder, div[data-baseweb="textarea"] textarea::placeholder { color: #888888 !important; font-weight: 400; }
 div[role="dialog"] { background: linear-gradient(135deg, var(--color-naranja), var(--color-rojo)) !important; border: 2px solid white; border-radius: 24px !important; }
 div[role="dialog"] h1, div[role="dialog"] h2, div[role="dialog"] h3, div[role="dialog"] p, div[role="dialog"] span, div[role="dialog"] label { color: white !important; }
-div[role="dialog"] input, div[role="dialog"] textarea { background-color: white !important; color: #1D1D1F !important; border: 2px solid transparent !important; border-radius: 12px; padding: 12px; font-weight: 500; }
-div[role="dialog"] input:focus, div[role="dialog"] textarea:focus { border: 2px solid #1D1D1F !important; }
-div[role="dialog"] input::placeholder, div[role="dialog"] textarea::placeholder { color: #888888 !important; font-weight: 400; }
 div[role="dialog"] div[data-baseweb="select"] > div { background-color: white !important; border: 2px solid transparent !important; border-radius: 12px; }
 div[role="dialog"] div[data-baseweb="select"] span { color: #1D1D1F !important; font-weight: 600; }
 div[data-baseweb="popover"] div { background-color: white !important; color: #FF6B00 !important; font-weight: 700; }
 div[data-baseweb="toast"] { background-color: var(--color-naranja) !important; border: 2px solid white; border-radius: 12px; }
 div[data-baseweb="toast"] div { color: white !important; font-weight: 700; }
+[data-testid="stExpander"] { background-color: transparent !important; border-radius: 10px; border: 1px solid rgba(0,0,0,0.08) !important; box-shadow: none !important; }
+[data-testid="stExpander"] details summary { color: rgba(100,100,100,0.4) !important; font-weight: normal; }
+[data-testid="stExpander"] details summary p { color: rgba(100,100,100,0.4) !important; font-family: 'Inter', sans-serif; font-size: 0.85rem; letter-spacing: 0px; }
+[data-testid="stExpander"] details summary svg { fill: rgba(100,100,100,0.3) !important; }
 .header-container { background-color: #1A1A1A; padding: 4.5rem 2rem; border-radius: 0 0 30px 30px; text-align: center; margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); position: relative; border-bottom: 5px solid var(--color-naranja); }
 .logo-esquina { display: block; margin: 0 auto 15px auto; width: 110px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
 .header-frase-peque { color: var(--color-naranja) !important; font-weight: 900; font-size: 1.2rem; margin: 0; letter-spacing: 4px; text-transform: uppercase; text-shadow: 1px 1px 5px rgba(0,0,0,0.5); }
@@ -159,6 +197,18 @@ div[data-testid="stAppViewContainer"] .valor-text p { margin: 0; color: #666 !im
 .social-link svg { transition: transform 0.3s ease, fill 0.3s ease; fill: var(--color-naranja); margin: 0 15px; }
 .social-link:hover svg { fill: white !important; transform: scale(1.2); }
 .texto-creditos { color: #CCCCCC !important; font-size: 0.85rem !important; margin-top: 40px !important; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; text-shadow: 1px 1px 5px rgba(0,0,0,0.8); }
+.resena-card { background: white; border-radius: 18px; padding: 22px 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border-left: 5px solid var(--color-naranja); margin-bottom: 15px; transition: transform 0.2s ease; }
+.resena-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+.resena-stars { color: #FF6B00; font-size: 1.3rem; margin-bottom: 6px; }
+.resena-texto { color: #1D1D1F !important; font-size: 1rem; line-height: 1.6; margin-bottom: 10px; font-weight: 500; font-style: italic; }
+.resena-autor { color: #888 !important; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.resena-header { text-align: center; margin-bottom: 35px; margin-top: 10px; }
+.resena-header h2 { font-family: 'Oswald', sans-serif !important; font-size: 2.8rem; color: var(--color-naranja) !important; line-height: 1.1; margin-bottom: 5px; }
+.resena-header p { font-size: 1rem; color: var(--color-texto) !important; font-weight: 600; opacity: 0.7; text-transform: uppercase; letter-spacing: 2px; }
+.promedio-box { background: linear-gradient(135deg, var(--color-naranja), var(--color-rojo)); border-radius: 20px; padding: 25px; text-align: center; margin-bottom: 30px; color: white !important; }
+.promedio-numero { font-family: 'Oswald', sans-serif; font-size: 4rem; color: white !important; line-height: 1; margin: 0; }
+.promedio-stars { font-size: 1.8rem; margin: 5px 0; }
+.promedio-label { font-size: 0.9rem; color: rgba(255,255,255,0.85) !important; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -286,6 +336,15 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# --- BANNER DE TIENDA CERRADA ---
+if not st.session_state.tienda_abierta:
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, var(--color-rojo), #9A0000); color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; border: 2px solid white; box-shadow: 0 5px 15px rgba(211,47,47,0.4);'>
+        <h2 style='color: white !important; margin: 0; font-family: Oswald, sans-serif; letter-spacing: 1px;'>⚠️ ¡ESTAMOS A REVENTAR! 🌮</h2>
+        <p style='margin: 10px 0 0 0; font-size: 1.1rem; font-weight: 500;'>Hemos pausado los pedidos en línea por un momento para darte el mejor servicio. Vuelve a intentar en unos minutos.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
 col_titulo, col_carrito = st.columns([7, 2])
 with col_titulo:
     st.subheader("🔥 Menú del Día")
@@ -297,11 +356,15 @@ with col_carrito:
     if total_items > 0:
         label_btn = f"🛒 Ver Pedido ({total_items})"
         tipo_btn = "primary"
-    if st.button(label_btn, type=tipo_btn, use_container_width=True):
-        st.session_state.fase_pedido = 1 
-        mostrar_carrito_modal()
+        
+    if st.session_state.tienda_abierta:
+        if st.button(label_btn, type=tipo_btn, use_container_width=True):
+            st.session_state.fase_pedido = 1 
+            mostrar_carrito_modal()
+    else:
+        st.button("🚫 Pedidos Pausados", disabled=True, use_container_width=True)
 
-tabs = st.tabs(["Tacos", "Bebidas", "Ubicación", "Conócenos"])
+tabs = st.tabs(["Tacos", "Bebidas", "Ubicación", "Conócenos", "⭐ Reseñas"])
 
 with tabs[0]:
     if not menu_tacos:
@@ -315,14 +378,20 @@ with tabs[0]:
                 st.markdown(f"<div class='nombre-prod'>{nombre}</div>", unsafe_allow_html=True)
                 st.markdown(f"<div class='desc-prod'>{info['desc']}</div>", unsafe_allow_html=True)
                 st.markdown(f"<span class='precio-tag'>${int(info['precio'])}</span>", unsafe_allow_html=True)
-                cantidad_actual = st.session_state.carrito.get(nombre, 0)
-                if cantidad_actual > 0:
-                    col_min, col_num, col_plus = st.columns([1, 1.2, 1])
-                    with col_min: st.button("－", key=f"min_t_{i}", on_click=quitar_del_carrito, args=(nombre,), use_container_width=True)
-                    with col_num: st.markdown(f"<div class='contador-item'>{cantidad_actual}</div>", unsafe_allow_html=True)
-                    with col_plus: st.button("＋", key=f"plus_t_{i}", on_click=agregar_al_carrito, args=(nombre, "taco"), use_container_width=True)
+                
+                if not st.session_state.tienda_abierta:
+                    st.button("⏸️ Pausado", key=f"pause_t_{i}", disabled=True, use_container_width=True)
+                elif nombre in st.session_state.agotados:
+                    st.button("🚫 Agotado", key=f"agotado_t_{i}", disabled=True, use_container_width=True)
                 else:
-                    st.button("Agregar al pedido", key=f"add_t_{i}", on_click=agregar_al_carrito, args=(nombre, "taco"), use_container_width=True)
+                    cantidad_actual = st.session_state.carrito.get(nombre, 0)
+                    if cantidad_actual > 0:
+                        col_min, col_num, col_plus = st.columns([1, 1.2, 1])
+                        with col_min: st.button("－", key=f"min_t_{i}", on_click=quitar_del_carrito, args=(nombre,), use_container_width=True)
+                        with col_num: st.markdown(f"<div class='contador-item'>{cantidad_actual}</div>", unsafe_allow_html=True)
+                        with col_plus: st.button("＋", key=f"plus_t_{i}", on_click=agregar_al_carrito, args=(nombre, "taco"), use_container_width=True)
+                    else:
+                        st.button("Agregar al pedido", key=f"add_t_{i}", on_click=agregar_al_carrito, args=(nombre, "taco"), use_container_width=True)
 
 with tabs[1]:
     if not menu_bebidas:
@@ -335,14 +404,20 @@ with tabs[1]:
                 except: st.info("Sin imagen")
                 st.markdown(f"<div class='nombre-prod'>{nombre}</div>", unsafe_allow_html=True)
                 st.markdown(f"<span class='precio-tag'>${int(info['precio'])}</span>", unsafe_allow_html=True)
-                cantidad_actual = st.session_state.carrito.get(nombre, 0)
-                if cantidad_actual > 0:
-                    col_min, col_num, col_plus = st.columns([1, 1.2, 1])
-                    with col_min: st.button("－", key=f"min_b_{i}", on_click=quitar_del_carrito, args=(nombre,), use_container_width=True)
-                    with col_num: st.markdown(f"<div class='contador-item'>{cantidad_actual}</div>", unsafe_allow_html=True)
-                    with col_plus: st.button("＋", key=f"plus_b_{i}", on_click=agregar_al_carrito, args=(nombre, "bebida"), use_container_width=True)
+                
+                if not st.session_state.tienda_abierta:
+                    st.button("⏸️ Pausado", key=f"pause_b_{i}", disabled=True, use_container_width=True)
+                elif nombre in st.session_state.agotados:
+                    st.button("🚫 Agotado", key=f"agotado_b_{i}", disabled=True, use_container_width=True)
                 else:
-                    st.button("Agregar al pedido", key=f"add_b_{i}", on_click=agregar_al_carrito, args=(nombre, "bebida"), use_container_width=True)
+                    cantidad_actual = st.session_state.carrito.get(nombre, 0)
+                    if cantidad_actual > 0:
+                        col_min, col_num, col_plus = st.columns([1, 1.2, 1])
+                        with col_min: st.button("－", key=f"min_b_{i}", on_click=quitar_del_carrito, args=(nombre,), use_container_width=True)
+                        with col_num: st.markdown(f"<div class='contador-item'>{cantidad_actual}</div>", unsafe_allow_html=True)
+                        with col_plus: st.button("＋", key=f"plus_b_{i}", on_click=agregar_al_carrito, args=(nombre, "bebida"), use_container_width=True)
+                    else:
+                        st.button("Agregar al pedido", key=f"add_b_{i}", on_click=agregar_al_carrito, args=(nombre, "bebida"), use_container_width=True)
 
 with tabs[2]:
     st.markdown("### Encuéntranos")
@@ -350,8 +425,6 @@ with tabs[2]:
     st.markdown(mapa_html, unsafe_allow_html=True)
     st.markdown("<div class='ubicacion-box'><h4 style='color: #FF6B00 !important; margin-top: 0;'>📍 Dirección</h4><p><strong>El Taco Loco</strong><br>Ocozocoautla de Espinosa, Chiapas.</p><h4 style='color: #FF6B00 !important; margin-top: 15px;'>🕒 Horario</h4><p>Lunes a Domingo: <strong>6:00 PM - 12:00 AM</strong></p></div>", unsafe_allow_html=True)
     st.markdown("#### Conoce nuestro local:")
-    
-    # === IMAGEN DE UBICACIÓN ===
     try: st.image("imagenes/local_nuevo.jpg", caption="¡Te esperamos con los mejores tacos!", use_container_width=True)
     except: st.info("Guarda la foto del carrito de frente como 'local_nuevo.jpg' en la carpeta 'imagenes'.")
 
@@ -432,6 +505,146 @@ with tabs[3]:
 </div>
 """, unsafe_allow_html=True)
 
+with tabs[4]:
+    from datetime import datetime
+
+    # Cargar reseñas desde Sheets (se actualiza cada 30 seg)
+    resenas_sheets = cargar_resenas_sheets(URL_CSV_RESENAS) if "https://script.google.com/macros/s/AKfycbxCGiDEUAAvVXv4cfm05ajiVKotnCYgeQv8wmePsQoM_GgkCp8poM7iSCGGj5TEbIm4/exec" not in URL_CSV_RESENAS else []
+    # Combinar las reseñas de Sheets con las nuevas de sesión (antes de que recarguen)
+    todas_resenas = st.session_state.resenas + resenas_sheets
+
+    # ── CABECERA ──
+    st.markdown("""
+<div class="resena-header">
+<h2>LO QUE DICEN NUESTROS CLIENTES</h2>
+<p>Opiniones reales de nuestra comunidad</p>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── CAJA DE PROMEDIO ──
+    if todas_resenas:
+        promedio = sum(r["estrellas"] for r in todas_resenas) / len(todas_resenas)
+        estrellas_promedio = "⭐" * round(promedio)
+        total_resenas = len(todas_resenas)
+        st.markdown(f"""
+<div class="promedio-box">
+<p class="promedio-numero">{promedio:.1f}</p>
+<p class="promedio-stars">{estrellas_promedio}</p>
+<p class="promedio-label">Basado en {total_resenas} reseña{"s" if total_resenas != 1 else ""}</p>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── FORMULARIO NUEVA RESEÑA ──
+    st.markdown("<h3 style='color: var(--color-naranja) !important; font-family: Oswald, sans-serif; font-size: 1.6rem; margin-bottom: 5px;'>✍️ DEJA TU OPINIÓN</h3>", unsafe_allow_html=True)
+
+    with st.form("form_resena", clear_on_submit=True):
+        col_nom, col_est = st.columns([3, 2])
+        with col_nom:
+            nombre_resena = st.text_input("Tu nombre:", placeholder="Ej. Ana García")
+        with col_est:
+            estrellas_input = st.select_slider(
+                "Calificación:",
+                options=[1, 2, 3, 4, 5], value=5,
+                format_func=lambda x: "⭐" * x
+            )
+        comentario_resena = st.text_area(
+            "Tu comentario:",
+            placeholder="¿Qué fue lo que más te gustó? ¡Cuéntanos!",
+            height=100
+        )
+        foto_resena = st.file_uploader(
+            "📷 Agrega una foto (opcional) — JPG o PNG, máx. 3 MB",
+            type=["jpg", "jpeg", "png"],
+            help="Comparte una foto de tus tacos o del local 🌮"
+        )
+        enviar_resena = st.form_submit_button("Publicar Reseña ⭐", type="primary", use_container_width=True)
+
+    if enviar_resena:
+        if nombre_resena.strip() and comentario_resena.strip():
+            # Procesar imagen si se subió
+            imagen_b64 = ""
+            imagen_tipo = ""
+            imagen_nombre = ""
+            if foto_resena is not None:
+                if foto_resena.size > 3 * 1024 * 1024:
+                    st.error("⚠️ La imagen es muy grande. Por favor sube una de menos de 3 MB.")
+                    st.stop()
+                imagen_b64 = base64.b64encode(foto_resena.read()).decode("utf-8")
+                imagen_tipo = foto_resena.type
+                imagen_nombre = foto_resena.name
+
+            nueva_resena = {
+                "nombre":       nombre_resena.strip(),
+                "estrellas":    estrellas_input,
+                "comentario":   comentario_resena.strip(),
+                "fecha":        datetime.now().strftime("%d/%m/%Y"),
+                "imagen_b64":   imagen_b64,
+                "imagen_tipo":  imagen_tipo,
+                "imagen_nombre": imagen_nombre,
+            }
+
+            # Guardar en Google Sheets via Apps Script (hilo separado)
+            if "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTIoRwg327pe_n_h-paHJ2OMmufADQgIfeiTvXBWTzfnDyJn21dDhhSYq97WZIVb8ZzQfwaHlGGmvd/pub?gid=764839671&single=true&output=csv" not in URL_APPS_SCRIPT_RESENAS:
+                threading.Thread(
+                    target=enviar_resena_sheets,
+                    args=(URL_APPS_SCRIPT_RESENAS, nueva_resena)
+                ).start()
+
+            # Mostrar inmediatamente en sesión
+            nueva_local = {
+                "nombre":     nombre_resena.strip(),
+                "estrellas":  estrellas_input,
+                "comentario": comentario_resena.strip(),
+                "fecha":      datetime.now().strftime("%b %Y"),
+                "imagen_url": "",   # La URL real llega cuando Sheets recargue
+            }
+            if imagen_b64:
+                nueva_local["imagen_b64_preview"] = imagen_b64
+                nueva_local["imagen_tipo_preview"] = imagen_tipo
+
+            st.session_state.resenas.insert(0, nueva_local)
+            cargar_resenas_sheets.clear()   # forzar recarga del caché
+            st.toast(f"¡Gracias {nombre_resena.strip().split()[0]}! Tu reseña fue publicada 🌮", icon="⭐")
+            st.rerun()
+        else:
+            st.error("Por favor escribe tu nombre y un comentario.")
+
+    st.divider()
+
+    # ── GRID DE RESEÑAS ──
+    st.markdown("<h3 style='color: var(--color-texto) !important; font-family: Oswald, sans-serif; font-size: 1.5rem; margin-bottom: 20px;'>TODAS LAS RESEÑAS</h3>", unsafe_allow_html=True)
+
+    if todas_resenas:
+        col_a, col_b = st.columns(2)
+        for i, r in enumerate(todas_resenas):
+            col = col_a if i % 2 == 0 else col_b
+            estrellas_html = "⭐" * r["estrellas"] + "☆" * (5 - r["estrellas"])
+            with col:
+                st.markdown(f"""
+<div class="resena-card">
+<div class="resena-stars">{estrellas_html}</div>
+<p class="resena-texto">"{r['comentario']}"</p>
+<p class="resena-autor">— {r['nombre']} &nbsp;·&nbsp; {r['fecha']}</p>
+</div>
+""", unsafe_allow_html=True)
+                # Mostrar imagen si existe URL de Drive o preview base64
+                img_url = r.get("imagen_url", "")
+                img_b64_prev = r.get("imagen_b64_preview", "")
+                img_tipo_prev = r.get("imagen_tipo_preview", "image/jpeg")
+                if img_url and img_url not in ("", "nan"):
+                    st.image(img_url, use_container_width=True)
+                elif img_b64_prev:
+                    st.markdown(
+                        f'<img src="data:{img_tipo_prev};base64,{img_b64_prev}" '
+                        f'style="width:100%;border-radius:12px;margin-top:-8px;margin-bottom:12px;">',
+                        unsafe_allow_html=True
+                    )
+    else:
+        st.info("Aún no hay reseñas. ¡Sé el primero en comentar!")
+
+# ==========================================
+# 9. FOOTER O PIE DE PÁGINA
+# ==========================================
 st.markdown("""
 <div class='footer-container'>
 <h3 style="margin-bottom: 5px;">El Taco Loco</h3>
@@ -443,7 +656,146 @@ st.markdown("""
 </div>
 <p class="texto-creditos">© 2026 ElTacoLoco. Todos los derechos reservados. Hecho con 🔥 por AleRampz</p>
 </div>
-""", unsafe_allow_html=True)   
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 8. PANEL DE ADMINISTRADOR SECRETO Y DASHBOARD
+# ==========================================
+with st.expander("⚙️"):
+    st.markdown(f'<div style="text-align:center; margin-bottom: 15px;">{logo_html}</div>', unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: var(--color-naranja) !important; font-family: Oswald, sans-serif; margin-bottom: 20px;'>PANEL DE CONTROL</h2>", unsafe_allow_html=True)
+    
+    if not st.session_state.admin_logged_in:
+        pwd = st.text_input("Contraseña maestra:", type="password")
+        if st.button("Entrar al sistema", type="primary", use_container_width=True):
+            if pwd == "TacoLoco2026":
+                st.session_state.admin_logged_in = True
+                st.rerun()
+            else:
+                st.error("Acceso denegado. Contraseña incorrecta.")
+    else:
+        st.success("✅ Autenticado como Administrador")
+        
+        # --- PESTAÑAS PARA NO AMONTONAR EL DISEÑO ---
+        tab_operacion, tab_metricas = st.tabs(["🎛️ Control Operativo", "📊 Reporte de Ventas"])
+        
+        # --- PESTAÑA 1: CONTROL OPERATIVO ---
+        with tab_operacion:
+            st.markdown("""
+                <div style='background-color: var(--color-crema); padding: 20px; border-radius: 15px; border-left: 5px solid var(--color-naranja); margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05);'>
+                    <h4 style='margin-top:0; color: var(--color-texto) !important; font-family: Oswald, sans-serif;'>🎛️ ESTADO DE LA TAQUERÍA</h4>
+                    <p style='color: #666 !important; font-size: 0.95rem; margin-bottom: 0;'>Pausa toda la tienda si hay demasiada gente y no puedes recibir pedidos.</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            nuevo_estado = st.toggle("🟢 RECIBIENDO PEDIDOS", value=st.session_state.tienda_abierta)
+            if nuevo_estado != st.session_state.tienda_abierta:
+                st.session_state.tienda_abierta = nuevo_estado
+                st.rerun()
+                
+            st.divider()
+            
+            st.markdown("""
+                <div style='background-color: var(--color-crema); padding: 20px; border-radius: 15px; border-left: 5px solid var(--color-rojo); margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05);'>
+                    <h4 style='margin-top:0; color: var(--color-texto) !important; font-family: Oswald, sans-serif;'>🥩 INVENTARIO (AGOTAR PLATILLOS)</h4>
+                    <p style='color: #666 !important; font-size: 0.95rem; margin-bottom: 0;'>Activa el botón si se acabó un producto para que los clientes ya no puedan pedirlo.</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            for item in menu_completo.keys():
+                is_agotado = item in st.session_state.agotados
+                marcar_agotado = st.toggle(f"🚫 Agotar: {item}", value=is_agotado, key=f"admin_agotado_{item}")
+                
+                if marcar_agotado and not is_agotado:
+                    st.session_state.agotados.append(item)
+                    if item in st.session_state.carrito: del st.session_state.carrito[item]
+                    st.rerun()
+                elif not marcar_agotado and is_agotado:
+                    st.session_state.agotados.remove(item)
+                    st.rerun()
+
+        # --- PESTAÑA 2: MÉTRICAS Y GRÁFICAS ---
+        with tab_metricas:
+            # Enlace modificado a formato CSV para lectura rápida
+            URL_CSV_PEDIDOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTIoRwg327pe_n_h-paHJ2OMmufADQgIfeiTvXBWTzfnDyJn21dDhhSYq97WZIVb8ZzQfwaHlGGmvd/pub?gid=0&single=true&output=csv"
+            
+            try:
+                df_pedidos = pd.read_csv(URL_CSV_PEDIDOS)
+                
+                # Buscamos columnas de manera segura sin importar mayúsculas
+                col_total = next((c for c in df_pedidos.columns if 'total' in c.lower()), None)
+                col_pedido = next((c for c in df_pedidos.columns if 'pedido' in c.lower()), None)
+                
+                total_ingresos = 0
+                if col_total:
+                    # MAGIA ANTI-ERRORES: Borramos el '$' y las comas antes de sumar
+                    df_pedidos[col_total] = df_pedidos[col_total].astype(str).str.replace(r'[\$,]', '', regex=True)
+                    df_pedidos[col_total] = pd.to_numeric(df_pedidos[col_total], errors='coerce').fillna(0)
+                    total_ingresos = df_pedidos[col_total].sum()
+                    
+                total_ordenes = len(df_pedidos)
+                ticket_promedio = total_ingresos / total_ordenes if total_ordenes > 0 else 0
+                
+                st.markdown("<h3 style='color: var(--color-texto) !important; font-family: Oswald, sans-serif;'>MÉTRICAS EN TIEMPO REAL</h3>", unsafe_allow_html=True)
+                
+                # Cajas Gigantes de Métricas
+                c1, c2, c3 = st.columns(3)
+                c1.metric(label="💰 Ventas Totales", value=f"${total_ingresos:,.2f}")
+                c2.metric(label="📦 Total de Pedidos", value=f"{total_ordenes}")
+                c3.metric(label="🧾 Ticket Promedio", value=f"${ticket_promedio:,.2f}")
+                
+                st.divider()
+                
+                # Motor de lectura para "Cosas Más Vendidas"
+                if col_pedido:
+                    ventas_items = {}
+                    for p in df_pedidos[col_pedido].dropna():
+                        # Expresión regular que busca patrones como "2x Tacos"
+                        matches = re.findall(r'(\d+)\s*[xX]\s*([^,\|]+)', str(p))
+                        for cant, item in matches:
+                            item_name = item.strip()
+                            ventas_items[item_name] = ventas_items.get(item_name, 0) + int(cant)
+                    
+                    if ventas_items:
+                        # Convertimos a formato tabla para la gráfica
+                        df_top = pd.DataFrame(list(ventas_items.items()), columns=['Platillo', 'Vendidos'])
+                        df_top = df_top.sort_values(by='Vendidos', ascending=False).head(7)
+                        
+                        # GRÁFICA ALTAIR: Fondo blanco, barras coloridas y redondeadas
+                        grafica = alt.Chart(df_top).mark_bar(
+                            cornerRadiusTopLeft=5, 
+                            cornerRadiusTopRight=5,
+                            size=40
+                        ).encode(
+                            x=alt.X('Platillo', sort='-y', axis=alt.Axis(labelAngle=-45, title=None, labelFontSize=13, labelColor='#1D1D1F')),
+                            y=alt.Y('Vendidos', axis=alt.Axis(title='Cantidad Vendida', labelFontSize=13, labelColor='#1D1D1F', grid=True)),
+                            color=alt.Color('Platillo', scale=alt.Scale(scheme='category20b'), legend=None),
+                            tooltip=['Platillo', 'Vendidos']
+                        ).properties(
+                            background='white',
+                            height=380
+                        ).configure_axis(
+                            labelColor='#1D1D1F',
+                            titleColor='#1D1D1F'
+                        ).configure_view(
+                            strokeWidth=0
+                        )
+                        
+                        st.markdown("#### 🏆 Los Productos Más Vendidos")
+                        st.altair_chart(grafica, use_container_width=True)
+                    else:
+                        st.info("Aún no hay platillos registrados en el Excel de pedidos para hacer la gráfica.")
+                else:
+                    st.warning("No se encontró la columna de 'pedido' en tu Excel.")
+
+            except Exception as e:
+                st.info("Sube algunos pedidos a tu base de datos para generar las gráficas.")
+
+        st.divider()
+        if st.button("Cerrar Sesión", type="secondary", use_container_width=True):
+            st.session_state.admin_logged_in = False
+            st.rerun()   
+
 
 
 
