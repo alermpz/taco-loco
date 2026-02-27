@@ -88,7 +88,7 @@ def cargar_resenas_sheets(url_csv):
                 "fecha":       str(row.get("Fecha", "")).strip(),
                 "nombre":      str(row.get("Nombre", "")).strip(),
                 "estrellas":   int(float(str(row.get("Estrellas", 5)))),
-                "comentario":  str(row.get("Comentario", "")).strip(),
+                "comentario":  str(row.get("Comentarios", row.get("Comentario", ""))).strip(),
                 "imagen_url":  str(row.get("ImagenURL", "")).strip(),
             })
         return list(reversed(resenas))   # las más nuevas primero
@@ -799,7 +799,8 @@ with st.expander("⚙️"):
         st.divider()
         if st.button("Cerrar Sesión", type="secondary", use_container_width=True):
             st.session_state.admin_logged_in = False
-            st.rerun() 
+            st.rerun()
+
 
 
 
