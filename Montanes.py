@@ -39,7 +39,7 @@ URL_CSV_RESENAS = "https://script.google.com/macros/s/AKfycbxCGiDEUAAvVXv4cfm05a
 if 'resenas' not in st.session_state:
     st.session_state.resenas = []
 # URL del Apps Script para guardar reseñas
-URL_APPS_SCRIPT_RESENAS = "ttps://docs.google.com/spreadsheets/d/e/2PACX-1vQTIoRwg327pe_n_h-paHJ2OMmufADQgIfeiTvXBWTzfnDyJn21dDhhSYq97WZIVb8ZzQfwaHlGGmvd/pub?gid=764839671&single=true&output=csv"
+URL_APPS_SCRIPT_RESENAS = "https://script.google.com/macros/s/AKfycbxCGiDEUAAvVXv4cfm05ajiVKotnCYgeQv8wmePsQoM_GgkCp8poM7iSCGGj5TEbIm4/exec"
 
 
 # ==========================================
@@ -795,6 +795,7 @@ with st.expander("⚙️"):
         if st.button("Cerrar Sesión", type="secondary", use_container_width=True):
             st.session_state.admin_logged_in = False
             st.rerun()   
+
 
 
 
