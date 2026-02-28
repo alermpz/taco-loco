@@ -105,20 +105,22 @@ def get_img_as_base64(file):
     except:
         return None
 
-logo_base64 = get_img_as_base64("imagenes/logo.png")
-bg_base64 = get_img_as_base64("imagenes/fondotacos.png")
+# !!! RUTAS ACTUALIZADAS A FORMATO WEBP !!!
+logo_base64 = get_img_as_base64("imagenes/logo.webp")
+bg_base64 = get_img_as_base64("imagenes/fondotacos.webp")
 
 # CARGA DE IMÁGENES DEL CARRUSEL Y UBICACIÓN
-historia_base64 = get_img_as_base64("imagenes/historia.png")
-carrusel_1_base64 = get_img_as_base64("imagenes/carrusel_1.jpg")
-carrusel_2_base64 = get_img_as_base64("imagenes/carrusel_2.jpg")
-carrusel_3_base64 = get_img_as_base64("imagenes/carrusel_3.jpg")
+historia_base64 = get_img_as_base64("imagenes/historia.webp")
+carrusel_1_base64 = get_img_as_base64("imagenes/carrusel_1.webp")
+carrusel_2_base64 = get_img_as_base64("imagenes/carrusel_2.webp")
+carrusel_3_base64 = get_img_as_base64("imagenes/carrusel_3.webp")
 
-logo_src = f"data:image/png;base64,{logo_base64}" if logo_base64 else ""
-historia_src = f"data:image/png;base64,{historia_base64}" if historia_base64 else logo_src
-carr_1_src = f"data:image/jpeg;base64,{carrusel_1_base64}" if carrusel_1_base64 else logo_src
-carr_2_src = f"data:image/jpeg;base64,{carrusel_2_base64}" if carrusel_2_base64 else logo_src
-carr_3_src = f"data:image/jpeg;base64,{carrusel_3_base64}" if carrusel_3_base64 else logo_src
+# !!! LECTORES ACTUALIZADOS A FORMATO WEBP !!!
+logo_src = f"data:image/webp;base64,{logo_base64}" if logo_base64 else ""
+historia_src = f"data:image/webp;base64,{historia_base64}" if historia_base64 else logo_src
+carr_1_src = f"data:image/webp;base64,{carrusel_1_base64}" if carrusel_1_base64 else logo_src
+carr_2_src = f"data:image/webp;base64,{carrusel_2_base64}" if carrusel_2_base64 else logo_src
+carr_3_src = f"data:image/webp;base64,{carrusel_3_base64}" if carrusel_3_base64 else logo_src
 
 # ==========================================
 # 4. MOTOR VISUAL Y ESTILOS CSS BASE
@@ -212,12 +214,12 @@ div[data-testid="stAppViewContainer"] .valor-text p { margin: 0; color: #666 !im
 </style>
 """, unsafe_allow_html=True)
 
-# INYECCIÓN DINÁMICA DE LA IMAGEN DE FONDO
+# !!! CSS ACTUALIZADO A WEBP !!!
 if bg_base64:
     st.markdown(f"""
 <style>
-.header-container {{ background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.85)), url('data:image/png;base64,{bg_base64}') center/cover no-repeat !important; }}
-.footer-container {{ background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6)), url('data:image/png;base64,{bg_base64}') center/cover no-repeat !important; }}
+.header-container {{ background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.85)), url('data:image/webp;base64,{bg_base64}') center/cover no-repeat !important; }}
+.footer-container {{ background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6)), url('data:image/webp;base64,{bg_base64}') center/cover no-repeat !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -327,7 +329,8 @@ def mostrar_carrito_modal():
 # ==========================================
 # 7. ESTRUCTURA VISUAL DE LA PÁGINA (UI)
 # ==========================================
-logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-esquina">' if logo_base64 else ''
+# !!! LOGO WEBP EN EL HEADER !!!
+logo_html = f'<img src="data:image/webp;base64,{logo_base64}" class="logo-esquina">' if logo_base64 else ''
 st.markdown(f"""
 <div class="header-container">
 {logo_html}
@@ -425,8 +428,9 @@ with tabs[2]:
     st.markdown(mapa_html, unsafe_allow_html=True)
     st.markdown("<div class='ubicacion-box'><h4 style='color: #FF6B00 !important; margin-top: 0;'>📍 Dirección</h4><p><strong>El Taco Loco</strong><br>Ocozocoautla de Espinosa, Chiapas.</p><h4 style='color: #FF6B00 !important; margin-top: 15px;'>🕒 Horario</h4><p>Lunes a Domingo: <strong>6:00 PM - 12:00 AM</strong></p></div>", unsafe_allow_html=True)
     st.markdown("#### Conoce nuestro local:")
-    try: st.image("imagenes/local_nuevo.jpg", caption="¡Te esperamos con los mejores tacos!", use_container_width=True)
-    except: st.info("Guarda la foto del carrito de frente como 'local_nuevo.jpg' en la carpeta 'imagenes'.")
+    # !!! IMAGEN DEL LOCAL ACTUALIZADA A WEBP !!!
+    try: st.image("imagenes/local_nuevo.webp", caption="¡Te esperamos con los mejores tacos!", use_container_width=True)
+    except: st.info("Guarda la foto del carrito de frente como 'local_nuevo.webp' en la carpeta 'imagenes'.")
 
 with tabs[3]:
     st.markdown(f"""
@@ -552,9 +556,11 @@ with tabs[4]:
             placeholder="¿Qué fue lo que más te gustó? ¡Cuéntanos!",
             height=100
         )
+        
+        # !!! SE AGREGÓ "WEBP" COMO FORMATO PERMITIDO DE SUBIDA !!!
         foto_resena = st.file_uploader(
-            "📷 Agrega una foto (opcional) — JPG o PNG, máx. 3 MB",
-            type=["jpg", "jpeg", "png"],
+            "📷 Agrega una foto (opcional) — JPG, PNG o WEBP, máx. 3 MB",
+            type=["jpg", "jpeg", "png", "webp"],
             help="Comparte una foto de tus tacos o del local 🌮"
         )
         enviar_resena = st.form_submit_button("Publicar Reseña ⭐", type="primary", use_container_width=True)
@@ -640,32 +646,18 @@ with tabs[4]:
 <div class="resena-card">
 <div class="resena-stars">{estrellas_html}</div>
 <p class="resena-texto">"{r['comentario']}"</p>
-<p class="resena-autor">— {r['nombre']} &nbsp;·&nbsp; {r['fecha']}</p>
+<p class="resena-autor">— {r['nombre']}  ·  {r['fecha']}</p>
 {img_html}
 </div>
 """, unsafe_allow_html=True)
     else:
         st.info("Aún no hay reseñas. ¡Sé el primero en comentar!")
 
-# ==========================================
-# 9. FOOTER O PIE DE PÁGINA
-# ==========================================
-st.markdown("""
-<div class='footer-container'>
-<h3 style="margin-bottom: 5px;">El Taco Loco</h3>
-<p style="margin-bottom: 30px; font-weight: 500;">Los mejores tacos de Coita, a un clic de distancia.</p>
-<div style="display: flex; justify-content: center; margin-bottom: 20px;">
-<a href='https://www.facebook.com/share/1GSfLr4nxj/?mibextid=wwXIfr' target='_blank' title="Facebook" class="social-link"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M22.675 0h-21.35C.597 0 0 .597 0 1.325v21.351C0 23.403.597 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.597 1.323-1.324V1.325C24 .597 23.403 0 22.675 0z"/></svg></a>
-<a href='#' target='_blank' title="Instagram" class="social-link"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 1.76-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 1.76 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-1.762 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-1.778-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
-<a href='#' target='_blank' title="TikTok" class="social-link"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.53 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
-</div>
-<p class="texto-creditos">© 2026 ElTacoLoco. Todos los derechos reservados. Hecho con 🔥 por AleRampz</p>
-</div>
-""", unsafe_allow_html=True)
 
 # ==========================================
 # 8. PANEL DE ADMINISTRADOR SECRETO Y DASHBOARD
 # ==========================================
+st.markdown("<br><br><br><br>", unsafe_allow_html=True)
 with st.expander("⚙️"):
     st.markdown(f'<div style="text-align:center; margin-bottom: 15px;">{logo_html}</div>', unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center; color: var(--color-naranja) !important; font-family: Oswald, sans-serif; margin-bottom: 20px;'>PANEL DE CONTROL</h2>", unsafe_allow_html=True)
@@ -800,6 +792,24 @@ with st.expander("⚙️"):
         if st.button("Cerrar Sesión", type="secondary", use_container_width=True):
             st.session_state.admin_logged_in = False
             st.rerun()
+
+
+# ==========================================
+# 9. FOOTER O PIE DE PÁGINA
+# ==========================================
+st.markdown("""
+<div class='footer-container'>
+<h3 style="margin-bottom: 5px;">El Taco Loco</h3>
+<p style="margin-bottom: 30px; font-weight: 500;">Los mejores tacos de Coita, a un clic de distancia.</p>
+<div style="display: flex; justify-content: center; margin-bottom: 20px;">
+<a href='https://www.facebook.com/share/1GSfLr4nxj/?mibextid=wwXIfr' target='_blank' title="Facebook" class="social-link"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M22.675 0h-21.35C.597 0 0 .597 0 1.325v21.351C0 23.403.597 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.597 1.323-1.324V1.325C24 .597 23.403 0 22.675 0z"/></svg></a>
+<a href='#' target='_blank' title="Instagram" class="social-link"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 1.76-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 1.76 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-1.762 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-1.778-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+<a href='#' target='_blank' title="TikTok" class="social-link"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.53 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+</div>
+<p class="texto-creditos">© 2026 ElTacoLoco. Todos los derechos reservados. Hecho con 🔥 por AleRampz</p>
+</div>
+""", unsafe_allow_html=True)
+
 
 
 
