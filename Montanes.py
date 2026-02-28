@@ -8,9 +8,14 @@ import re
 import altair as alt
 
 # ==========================================
-# 1. CONFIGURACIÓN INICIAL DE LA PÁGINA
+# 0.1 CONFIGURACIÓN INICIAL
 # ==========================================
 st.set_page_config(page_title="EL TACO LOCO", page_icon="🌮", layout="wide")
+
+# --- INYECCIÓN DE METADESCRIPCIÓN PARA GOOGLE (SEO) ---
+st.markdown("""
+    <meta name="description" content="Los mejores tacos de Coita. Pide en línea en El Taco Loco: tacos de res, puerco, tripa y bebidas. Tradición familiar desde 2005. ¡Haz tu pedido por WhatsApp!">
+""", unsafe_allow_html=True)
 
 # ==========================================
 # 2. VARIABLES DE ESTADO Y MEMORIA (SESSION)
@@ -126,6 +131,10 @@ carr_3_src = f"data:image/webp;base64,{carrusel_3_base64}" if carrusel_3_base64 
 # 4. MOTOR VISUAL Y ESTILOS CSS BASE
 # ==========================================
 st.markdown("""
+<link rel="preconnect" href="https://docs.google.com">
+<link rel="dns-prefetch" href="https://docs.google.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
 <style>
 :root { --color-naranja: #FF6B00; --color-rojo: #D32F2F; --color-crema: #F4F6F8; --color-texto: #1D1D1F; }
@@ -446,10 +455,10 @@ with tabs[3]:
 <p>Hoy, a casi dos décadas de que Ana Lleli diera el primer paso, la tradición se fortalece con la llegada de la nueva generación: su hijo <strong>Jonathan Montanes</strong>. En El Taco Loco seguimos siendo ese mismo negocio familiar, manteniendo intacto el sabor de los tres tacos que lo iniciaron todo y demostrando que el trabajo hecho con cariño siempre prospera.</p>
 </div>
 <div class="carousel-wrapper">
-<img src="{historia_src}" class="img-carrusel img-1" alt="Historia del Taco Loco">
-<img src="{carr_1_src}" class="img-carrusel img-2" alt="Preparación">
-<img src="{carr_2_src}" class="img-carrusel img-3" alt="Tacos">
-<img src="{carr_3_src}" class="img-carrusel img-4" alt="Local interior">
+<img src="{historia_src}" class="img-carrusel img-1" loading="lazy" alt="Historia del Taco Loco">
+<img src="{carr_1_src}" class="img-carrusel img-2" loading="lazy" alt="Preparación">
+<img src="{carr_2_src}" class="img-carrusel img-3" loading="lazy" alt="Tacos">
+<img src="{carr_3_src}" class="img-carrusel img-4" loading="lazy" alt="Local interior">
 </div>
 </div>
 <div style="display: flex; flex-wrap: wrap; gap: 30px; background-color: #FFFFFF !important; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-top: 5px solid #FF6B00; border-bottom: 5px solid #FF6B00; margin-bottom: 50px;">
@@ -637,9 +646,9 @@ with tabs[4]:
                     thumb_url = f"https://drive.google.com/thumbnail?id={file_id}&sz=w800"
                 else:
                     thumb_url = img_url
-                img_html = f'<img src="{thumb_url}" style="width:100%;border-radius:10px;margin-top:12px;object-fit:cover;max-height:220px;">'
+                img_html = f'<img src="{thumb_url}" loading="lazy" style="width:100%;border-radius:10px;margin-top:12px;object-fit:cover;max-height:220px;">'
             elif img_b64_prev:
-                img_html = f'<img src="data:{img_tipo_prev};base64,{img_b64_prev}" style="width:100%;border-radius:10px;margin-top:12px;object-fit:cover;max-height:220px;">'
+                img_html = f'<img src="data:{img_tipo_prev};base64,{img_b64_prev}" loading="lazy" style="width:100%;border-radius:10px;margin-top:12px;object-fit:cover;max-height:220px;">'
 
             with col:
                 st.markdown(f"""
@@ -809,6 +818,7 @@ st.markdown("""
 <p class="texto-creditos">© 2026 ElTacoLoco. Todos los derechos reservados. Hecho con 🔥 por AleRampz</p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
